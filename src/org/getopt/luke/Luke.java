@@ -53,6 +53,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.CheckIndex.Status.SegmentInfoStatus;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.codecs.Codec;
@@ -798,12 +799,13 @@ public class Luke extends Thinlet implements ClipboardOwner {
         policy = new KeepLastIndexDeletionPolicy();
       }
       cfg.setIndexDeletionPolicy(policy);
-      MergePolicy mp = cfg.getMergePolicy();
-      if (mp instanceof LogMergePolicy) {
-        ((LogMergePolicy)mp).setUseCompoundFile(IndexGate.preferCompoundFormat(dir));
-      } else if (mp instanceof TieredMergePolicy) {
-        ((TieredMergePolicy)cfg.getMergePolicy()).setUseCompoundFile(IndexGate.preferCompoundFormat(dir));
-      }
+      // TODO
+//      MergePolicy mp = cfg.getMergePolicy();
+//      if (mp instanceof LogMergePolicy) {
+//        ((LogMergePolicy)mp).setUseCompoundFile(IndexGate.preferCompoundFormat(dir));
+//      } else if (mp instanceof TieredMergePolicy) {
+//        ((TieredMergePolicy)cfg.getMergePolicy()).setUseCompoundFile(IndexGate.preferCompoundFormat(dir));
+//      }
       IndexWriter iw = new IndexWriter(dir, cfg);
       return iw;
     } catch (Exception e) {
@@ -1138,7 +1140,7 @@ public class Luke extends Thinlet implements ClipboardOwner {
       }
       showFiles(dir, null);
       if (ir instanceof CompositeReader) {
-        ar = new SlowCompositeReaderWrapper((CompositeReader)ir);
+        ar = SlowCompositeReaderWrapper.wrap((CompositeReader)ir);
       } else if (ir instanceof AtomicReader) {
         ar = (AtomicReader)ir;
       }
@@ -1406,7 +1408,9 @@ public class Luke extends Thinlet implements ClipboardOwner {
       errorMsg("Error reading segment infos for '" + segName + ": " + e.toString());
       return;
     }
-    for (SegmentInfoPerCommit si : infos.asList()) {
+    Iterator<SegmentCommitInfo> it = infos.iterator();
+    while (it.hasNext()) {
+    	SegmentCommitInfo si = it.next();
       Object r = create("row");
       add(segTable, r);
       Object cell = create("cell");
@@ -1452,7 +1456,7 @@ public class Luke extends Thinlet implements ClipboardOwner {
     if (row == null) {
       return;
     }
-    SegmentInfoPerCommit si = (SegmentInfoPerCommit)getProperty(row, "si");
+    SegmentCommitInfo si = (SegmentCommitInfo)getProperty(row, "si");
     if (si == null) {
       showStatus("Missing SegmentInfoPerCommit???");
       return;
@@ -2050,7 +2054,8 @@ public class Luke extends Thinlet implements ClipboardOwner {
         Object fixRes = find(dialog, "fixRes");
         PanelPrintWriter ppw = (PanelPrintWriter)getProperty(dialog, "ppw");
         try {
-          ci.fixIndex(status, c);
+        	//CheckIndex.Status status = ci.checkIndex();
+          ci.fixIndex(status);
           setString(fixRes, "text", "DONE. Review the output above.");
         } catch (Exception e) {
           ppw.println("\nERROR during Fix Index:");
@@ -2414,12 +2419,13 @@ public class Luke extends Thinlet implements ClipboardOwner {
           cfg.setTermIndexInterval(tii);
           MergePolicy p = cfg.getMergePolicy();
           if (p instanceof LogMergePolicy) {
-            ((LogMergePolicy)p).setUseCompoundFile(useCompound);
+        	  // TODO
+//            ((LogMergePolicy)p).setUseCompoundFile(useCompound);
             if (useCompound) {
               ((LogMergePolicy)p).setNoCFSRatio(1.0);
             }
           } else if (p instanceof TieredMergePolicy) {
-            ((TieredMergePolicy)p).setUseCompoundFile(useCompound);            
+//            ((TieredMergePolicy)p).setUseCompoundFile(useCompound);            
             if (useCompound) {
               ((TieredMergePolicy)p).setNoCFSRatio(1.0);
             }
@@ -2940,7 +2946,7 @@ public class Luke extends Thinlet implements ClipboardOwner {
     if (f != null) {
       try {
         if (ar != null && info.hasNorms()) {
-          DocValues norms = ar.normValues(fName);
+          NumericDocValues norms = ar.getNormValues(fName);
           String val = Util.normsToString(norms, fName, docid, sim);
           setString(cell, "text", val);
         } else {
@@ -3140,13 +3146,15 @@ public class Luke extends Thinlet implements ClipboardOwner {
     putProperty(dialog, "similarity", s);
     if (ar != null) {
      try {
-       DocValues norms = ar.normValues(f.name());
-       byte curBVal = (byte)norms.getSource().getInt(docNum.intValue());
-       float curFVal = Util.decodeNormValue(curBVal, f.name(), s);
-       setString(curNorm, "text", String.valueOf(curFVal));
-       setString(newNorm, "text", String.valueOf(curFVal));
-       setString(encNorm, "text", String.valueOf(curFVal) +
-          " (0x" + Util.byteToHex(curBVal) + ")");
+    	 NumericDocValues norms = ar.getNormValues(f.name());
+    	 Long l = 0l;
+    	 if (norms != null)
+    		 l =norms.get(docNum.intValue()); 
+       
+       setString(curNorm, "text", String.valueOf(l));
+       setString(newNorm, "text", String.valueOf(l));
+       setString(encNorm, "text", String.valueOf(l) + 
+          " (0x" + Util.byteToHex(l.byteValue()) + ")");
      } catch (Exception e) {
        e.printStackTrace();
        errorMsg("Error reading norm: " + e.toString());

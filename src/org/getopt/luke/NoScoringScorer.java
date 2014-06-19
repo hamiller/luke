@@ -37,4 +37,13 @@ public class NoScoringScorer extends Scorer {
     return 1;
   }
 
+/* (non-Javadoc)
+ * @see org.apache.lucene.search.DocIdSetIterator#cost()
+ */
+@Override
+public long cost() {
+	// TODO Auto-generated method stub
+	return 0;
+}
+
 }

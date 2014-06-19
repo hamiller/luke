@@ -29,7 +29,7 @@ public class XMLExporter extends Observable {
           Map<String, Decoder> decoders) throws IOException {
     this.indexReader = indexReader;
     if (indexReader instanceof CompositeReader) {
-      this.atomicReader = new SlowCompositeReaderWrapper((CompositeReader)indexReader);
+      this.atomicReader = SlowCompositeReaderWrapper.wrap((CompositeReader)indexReader);
     } else if (indexReader instanceof AtomicReader) {
       this.atomicReader =  (AtomicReader)indexReader;
     }
@@ -181,18 +181,12 @@ public class XMLExporter extends Observable {
         continue;
       }
       bw.write("<field name='" + Util.xmlEscape(fields[0].name()));
-      DocValues dv = atomicReader.normValues(fields[0].name());
+      NumericDocValues dv = atomicReader.getNormValues(fields[0].name());
       if (dv != null) {
         // export raw value - we don't know what similarity was used
-        String type = dv.getType().toString();
-        if (type.contains("INT")) {
-          bw.write("' norm='" + dv.getSource().getInt(docNum));
-        } else if (type.startsWith("FLOAT")) {
-          bw.write("' norm='" + dv.getSource().getFloat(docNum));          
-        } else if (type.startsWith("BYTES")) {
-          dv.getSource().getBytes(docNum, bytes);
-          bw.write("' norm='" + Util.bytesToHex(bytes, false));
-        }
+        Long value = dv.get(docNum);
+        bw.write("' norm='" + value);
+        
       } 
       bw.write("' flags='" + Util.fieldFlags((Field)fields[0], infos.fieldInfo(fields[0].name())) + "'>\n");
       for (IndexableField ixf : fields) {

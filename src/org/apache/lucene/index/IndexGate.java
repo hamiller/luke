@@ -240,7 +240,7 @@ public class IndexGate {
     infos.read(dir);
     int compound = 0, nonCompound = 0;
     for (int i = 0; i < infos.size(); i++) {
-      if (((SegmentInfoPerCommit)infos.info(i)).info.getUseCompoundFile()) {
+      if (((SegmentCommitInfo)infos.info(i)).info.getUseCompoundFile()) {
         compound++;
       } else {
         nonCompound++;
@@ -254,7 +254,7 @@ public class IndexGate {
     infos.read(dir);
     IndexWriterConfig cfg = new IndexWriterConfig(Luke.LV, new WhitespaceAnalyzer(Luke.LV));
     IndexWriter iw = new IndexWriter(dir, cfg);
-    IndexFileDeleter deleter = new IndexFileDeleter(dir, policy, infos, null, iw);
+    IndexFileDeleter deleter = new IndexFileDeleter(dir, policy, infos, null, iw, false);
     deleter.close();
     iw.close();
   }

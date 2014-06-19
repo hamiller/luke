@@ -183,6 +183,11 @@ public class FsDirectory extends Directory {
       public String toString() {
         return "Lock@" + new Path(directory, name);
       }
+	@Override
+	public void close() throws IOException {
+		// TODO Auto-generated method stub
+		
+	}
     };
   }
 
@@ -334,5 +339,32 @@ public class FsDirectory extends Directory {
   public void sync(Collection<String> names) throws IOException {
     // not easily supported... we would have to track all open outputs
   }
+
+/* (non-Javadoc)
+ * @see org.apache.lucene.store.Directory#clearLock(java.lang.String)
+ */
+@Override
+public void clearLock(String name) throws IOException {
+	// TODO Auto-generated method stub
+	
+}
+
+/* (non-Javadoc)
+ * @see org.apache.lucene.store.Directory#setLockFactory(org.apache.lucene.store.LockFactory)
+ */
+@Override
+public void setLockFactory(LockFactory lockFactory) throws IOException {
+	// TODO Auto-generated method stub
+	
+}
+
+/* (non-Javadoc)
+ * @see org.apache.lucene.store.Directory#getLockFactory()
+ */
+@Override
+public LockFactory getLockFactory() {
+	// TODO Auto-generated method stub
+	return null;
+}
 
 }
